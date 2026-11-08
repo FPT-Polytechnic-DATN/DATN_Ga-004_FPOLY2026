@@ -1,42 +1,39 @@
-﻿
-using UnityEngine;
+﻿using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(CharacterController))]
 public class PlayerMovement : MonoBehaviour
 {
     [Header("Movement")]
     public float walkSpeed = 2.5f;
-    public float runSpeed = 5f;
-    public float acceleration = 25f;
-    public float deceleration = 35f;
-    public float rotationSpeed = 540f;
+    public float runSpeed = 5.5f;
+    public float rotationSpeed = 50f;
+
+    [Header("Rotation Offset")]
+    [Tooltip("Nếu nhân vật bị lệch hướng đi thẳng, hãy chỉnh số này (ví dụ: 90, -90, 180)")]
+    public float rotationOffset = 0f;
 
     [Header("Camera")]
     public Transform cameraTransform;
 
-    [Header("Jump")]
-    public float jumpForce = 6f;
+    [Header("Jump & Gravity")]
+    public float gravity = -20f;
+    public float jumpHeight = 1.2f;
     public Transform groundCheck;
-    public float groundDistance = 0.25f;
+    public float groundDistance = 0.2f;
     public LayerMask groundLayer;
 
     [Header("Animation")]
     public Animator animator;
 
-    private Rigidbody rb;
+    private CharacterController controller;
     private Vector3 moveDirection;
-    private Vector3 currentVelocity;
-
+    private Vector3 velocity;
     private bool isGrounded;
-    private bool jumpPressed;
     private bool isRunning;
 
     void Start()
     {
-        rb = GetComponent<Rigidbody>();
-
-        rb.freezeRotation = true;
-        rb.interpolation = RigidbodyInterpolation.Interpolate;
+        controller = GetComponent<CharacterController>();
 
         if (animator == null)
             animator = GetComponentInChildren<Animator>();
@@ -47,127 +44,87 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
+        // 1. Kiểm tra chạm đất
+        if (groundCheck != null)
+        {
+            isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundLayer, QueryTriggerInteraction.Ignore);
+        }
+        else
+        {
+            isGrounded = controller.isGrounded;
+        }
+
+        if (isGrounded && velocity.y < 0)
+        {
+            velocity.y = -2f;
+        }
+
+        // 2. Nhận input bàn phím (Dùng GetAxisRaw để dừng ngay lập tức, không bị trượt)
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
 
-        Vector3 input = new Vector3(horizontal, 0, vertical);
-        input = Vector3.ClampMagnitude(input, 1f);
-
-        // Camera relative movement
+        // 3. Tính hướng di chuyển theo góc nhìn Camera
         if (cameraTransform != null)
         {
             Vector3 forward = cameraTransform.forward;
             Vector3 right = cameraTransform.right;
 
-            forward.y = 0;
-            right.y = 0;
-
+            forward.y = 0f;
+            right.y = 0f;
             forward.Normalize();
             right.Normalize();
 
-            moveDirection = forward * input.z + right * input.x;
+            moveDirection = forward * vertical + right * horizontal;
         }
         else
         {
-            moveDirection = input;
+            moveDirection = new Vector3(horizontal, 0f, vertical);
         }
-
-        moveDirection = Vector3.ClampMagnitude(moveDirection, 1f);
 
         isRunning = Input.GetKey(KeyCode.LeftShift);
+        float currentSpeed = isRunning ? runSpeed : walkSpeed;
 
-        // Kiểm tra mặt đất
-        if (groundCheck != null)
+        // 4. Di chuyển nhân vật (Tự động bước qua bậc cầu thang nhờ Character Controller)
+        Vector3 movement = moveDirection.normalized * currentSpeed;
+        controller.Move(movement * Time.deltaTime);
+
+        // 5. Xoay hướng nhân vật kèm góc bù (Rotation Offset) để sửa lỗi đi xéo
+        if (moveDirection.sqrMagnitude > 0.001f)
         {
-            isGrounded = Physics.CheckSphere(
-                groundCheck.position,
-                groundDistance,
-                groundLayer,
-                QueryTriggerInteraction.Ignore
-            );
+            Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
+            targetRotation *= Quaternion.Euler(0, rotationOffset, 0); // Cộng góc bù lệch nếu model 3D bị xoay sai hướng
+
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
         }
 
-        // Animation
-        if (animator != null)
-        {
-            float speed = moveDirection.magnitude *
-                (isRunning ? runSpeed : walkSpeed);
-
-            animator.SetFloat("Speed", speed, 0.15f, Time.deltaTime);
-            animator.SetBool("IsGrounded", isGrounded);
-        }
-
-        // Nhảy
+        // 6. Nhảy
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
         {
-            jumpPressed = true;
-        }
-    }
-
-    void FixedUpdate()
-    {
-        float targetSpeed = isRunning ? runSpeed : walkSpeed;
-
-        Vector3 targetVelocity = moveDirection * targetSpeed;
-
-        // Tăng tốc và giảm tốc riêng biệt
-        float rate = moveDirection.sqrMagnitude > 0.01f
-            ? acceleration
-            : deceleration;
-
-        currentVelocity = Vector3.MoveTowards(
-            currentVelocity,
-            targetVelocity,
-            rate * Time.fixedDeltaTime
-        );
-
-        rb.linearVelocity = new Vector3(
-            currentVelocity.x,
-            rb.linearVelocity.y,
-            currentVelocity.z
-        );
-
-        // Xoay nhân vật mượt theo hướng di chuyển
-        if (moveDirection.sqrMagnitude > 0.01f)
-        {
-            Quaternion targetRotation =
-                Quaternion.LookRotation(moveDirection);
-
-            rb.MoveRotation(
-                Quaternion.RotateTowards(
-                    rb.rotation,
-                    targetRotation,
-                    rotationSpeed * Time.fixedDeltaTime
-                )
-            );
+            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
         }
 
-        // Thực hiện nhảy
-        if (jumpPressed)
+        // 7. Trọng lực
+        velocity.y += gravity * Time.deltaTime;
+        controller.Move(velocity * Time.deltaTime);
+
+        // 8. Cập nhật Animator khớp với các điều kiện trong Animator Controller
+        if (animator != null)
         {
-            rb.linearVelocity = new Vector3(
-                rb.linearVelocity.x,
-                0f,
-                rb.linearVelocity.z
-            );
+            float animSpeed = 0f;
+            if (moveDirection.sqrMagnitude > 0.001f)
+            {
+                animSpeed = isRunning ? runSpeed : walkSpeed;
+            }
 
-            rb.AddForce(
-                Vector3.up * jumpForce,
-                ForceMode.Impulse
-            );
-
-            jumpPressed = false;
+            animator.SetFloat("Speed", animSpeed, 0.1f, Time.deltaTime);
+            animator.SetBool("IsGrounded", isGrounded);
         }
     }
 
     private void OnDrawGizmosSelected()
     {
         if (groundCheck == null) return;
-
         Gizmos.color = isGrounded ? Color.green : Color.red;
-        Gizmos.DrawWireSphere(
-            groundCheck.position,
-            groundDistance
-        );
+        Gizmos.DrawWireSphere(groundCheck.position, groundDistance);
     }
 }
