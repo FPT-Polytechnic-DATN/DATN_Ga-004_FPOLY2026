@@ -3238,8 +3238,8 @@ MonoBehaviour:
   turnOnKey: 102
   flashlightHolder: {fileID: 592786880}
   flashlightLight: {fileID: 1139491096}
-  pickupSound: {fileID: 0}
-  pickupVolume: 1
+  pickupSound: {fileID: 8300000, guid: e7968b9caaabe2245bbe98ecb45efa9d, type: 3}
+  pickupVolume: 0.71
 --- !u!82 &493918295
 AudioSource:
   m_ObjectHideFlags: 0
@@ -11945,6 +11945,10 @@ PrefabInstance:
       propertyPath: doorOpenSound
       value: 
       objectReference: {fileID: 8300000, guid: b5777fc267efb344aab07b59a1c77842, type: 3}
+    - target: {fileID: 6830186446354260777, guid: beef3bcde1610f04aa96275436147bb9, type: 3}
+      propertyPath: m_Resource
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 6860031559262852181, guid: beef3bcde1610f04aa96275436147bb9, type: 3}
       propertyPath: m_Convex
       value: 1
