@@ -1,14 +1,14 @@
 using UnityEngine;
 
-public class DoorTriggerAction : MonoBehaviour
+public class DoorTriggerAction1 : MonoBehaviour
 {
-    [Header("Animator cho 2 cánh cửa")]
-    public Animator leftDoorAnimator;  // Kéo Animator của cánh trái vào đây
-    public Animator rightDoorAnimator; // Kéo Animator của cánh phải vào đây
+    [Header("Animator cho 2 cÃ¡nh cá»­a")]
+    public Animator leftDoorAnimator;  // KÃ©o Animator cá»§a cÃ¡nh trÃ¡i vÃ o Ä‘Ã¢y
+    public Animator rightDoorAnimator; // KÃ©o Animator cá»§a cÃ¡nh pháº£i vÃ o Ä‘Ã¢y
 
-    [Header("Cài đặt kích hoạt")]
-    public float openDistance = 3f;    // Khoảng cách để mở cửa
-    public Transform player;           // Kéo nhân vật Player vào đây (hoặc để trống tự động tìm theo Tag)
+    [Header("CÃ i Ä‘áº·t kÃ­ch hoáº¡t")]
+    public float openDistance = 3f;    // Khoáº£ng cÃ¡ch Ä‘á»ƒ má»Ÿ cá»­a
+    public Transform player;           // KÃ©o nhÃ¢n váº­t Player vÃ o Ä‘Ã¢y (hoáº·c Ä‘á»ƒ trá»‘ng tá»± Ä‘á»™ng tÃ¬m theo Tag)
 
     void Start()
     {
@@ -23,18 +23,18 @@ public class DoorTriggerAction : MonoBehaviour
     {
         if (player == null) return;
 
-        // Kiểm tra khoảng cách giữa nhân vật và cửa
+        // Kiá»ƒm tra khoáº£ng cÃ¡ch giá»¯a nhÃ¢n váº­t vÃ  cá»­a
         float distance = Vector3.Distance(transform.position, player.position);
 
         if (distance <= openDistance)
         {
-            // Mở cả 2 cánh
+            // Má»Ÿ cáº£ 2 cÃ¡nh
             if (leftDoorAnimator != null) leftDoorAnimator.SetBool("isOpen", true);
             if (rightDoorAnimator != null) rightDoorAnimator.SetBool("isOpen", true);
         }
         else
         {
-            // Đóng lại khi đi xa
+            // ÄÃ³ng láº¡i khi Ä‘i xa
             if (leftDoorAnimator != null) leftDoorAnimator.SetBool("isOpen", false);
             if (rightDoorAnimator != null) rightDoorAnimator.SetBool("isOpen", false);
         }

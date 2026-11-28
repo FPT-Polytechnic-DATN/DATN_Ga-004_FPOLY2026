@@ -1,44 +1,60 @@
+
 using UnityEngine;
 
-public class DoorOnceController : MonoBehaviour
+[RequireComponent(typeof(AudioSource))]
+public class DoorTriggerAction : MonoBehaviour
 {
-    [Header("Kéo Animator của DoorPivot vào đây")]
     public Animator doorAnimator;
 
+    [Header("Door Sound")]
+    public AudioClip doorOpenSound;
+    [Range(0f, 1f)]
+    public float doorSoundVolume = 1f;
+
     private bool playerInRange = false;
-    private bool hasOpened = false; // Cờ kiểm tra đã mở chưa
+    private bool hasOpened = false;
+    private AudioSource audioSource;
+
+    void Start()
+    {
+        audioSource = GetComponent<AudioSource>();
+        audioSource.playOnAwake = false;
+    }
 
     void Update()
     {
-        // Chỉ nhận phím E nếu người chơi ở gần VÀ cửa chưa từng mở
-        if (playerInRange && !hasOpened && Input.GetKeyDown(KeyCode.E))
+        if (playerInRange && !hasOpened &&
+            Input.GetKeyDown(KeyCode.E))
         {
-            hasOpened = true; // Đánh dấu đã dùng
+            hasOpened = true;
 
             if (doorAnimator != null)
             {
                 doorAnimator.SetBool("isOpen", true);
             }
 
-            // Tùy chọn: Tắt luôn collider trigger để không còn nhận diện người chơi nữa
+            if (doorOpenSound != null)
+            {
+                audioSource.PlayOneShot(
+                    doorOpenSound, doorSoundVolume);
+            }
+
             Collider col = GetComponent<Collider>();
-            if (col != null) col.enabled = false;
+
+            if (col != null)
+                col.enabled = false;
         }
     }
 
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
-        {
             playerInRange = true;
-        }
     }
 
     private void OnTriggerExit(Collider other)
     {
         if (other.CompareTag("Player"))
-        {
             playerInRange = false;
-        }
     }
 }
